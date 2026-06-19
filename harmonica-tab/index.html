@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>简谱转口琴吹吸谱</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    color: #fca311;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 24px;
+  }
+
+  /* ===== Input Area ===== */
+  .input-card {
+    background: #16213e;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .input-card label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .input-card textarea {
+    width: 100%;
+    height: 100px;
+    background: #0f3460;
+    border: 1px solid #1a4a7a;
+    border-radius: 10px;
+    color: #e0e0e0;
+    padding: 12px;
+    font-size: 16px;
+    font-family: "Courier New", monospace;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-card textarea:focus { border-color: #fca311; }
+  .input-card textarea::placeholder { color: #555; }
+  .input-hint {
+    font-size: 12px;
+    color: #666;
+    margin-top: 6px;
+    line-height: 1.6;
+  }
+  .input-hint code {
+    background: #2a2a4a;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #fca311;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    padding: 10px 24px;
+    border-radius: 30px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary {
+    background: #fca311;
+    color: #1a1a2e;
+    box-shadow: 0 4px 16px rgba(252,163,17,0.25);
+  }
+  .btn-primary:hover { background: #ffb83d; transform: translateY(-1px); }
+  .btn-secondary {
+    background: #0f3460;
+    color: #e0e0e0;
+    border: 1px solid #1a4a7a;
+  }
+  .btn-secondary:hover { background: #1a4a7a; }
+  .btn-danger {
+    background: #5c1a1a;
+    color: #ff6b6b;
+    border: 1px solid #8a2a2a;
+  }
+  .btn-danger:hover { background: #7a2626; }
+  .btn-success {
+    background: #1a5c2a;
+    color: #6bff8a;
+    border: 1px solid #2a8a3a;
+  }
+  .btn-success:hover { background: #267a36; }
+
+  /* ===== Song Info ===== */
+  .song-info-card {
+    background: #16213e;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .song-info-card.show { display: block; }
+  .song-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .song-info-grid input {
+    background: #0f3460;
+    border: 1px solid #1a4a7a;
+    border-radius: 8px;
+    color: #e0e0e0;
+    padding: 8px 12px;
+    font-size: 14px;
+    outline: none;
+    width: 100%;
+  }
+  .song-info-grid input:focus { border-color: #fca311; }
+  .song-info-grid label {
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  /* ===== Result Area ===== */
+  .result-card {
+    background: #16213e;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .result-card.show { display: block; }
+
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .result-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .result-subtitle {
+    font-size: 13px;
+    color: #888;
+  }
+
+  /* ===== Tab Display ===== */
+  .tab-container {
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .tab-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+  }
+  .tab-table th, .tab-table td {
+    text-align: center;
+    padding: 6px 10px;
+    min-width: 48px;
+    font-size: 14px;
+  }
+  .tab-table .measure-num {
+    color: #555;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-bottom: 1px solid #2a2a4a;
+  }
+  .tab-table .bar-line {
+    color: #555;
+    font-size: 20px;
+    font-weight: 100;
+    width: 16px;
+    min-width: 16px;
+    padding: 0;
+  }
+  .tab-table .note-num {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    padding: 4px 6px;
+  }
+  .tab-table .note-tab {
+    font-size: 15px;
+    padding: 4px 6px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s;
+    font-weight: 600;
+    user-select: none;
+  }
+  .tab-table .note-tab:hover {
+    background: #2a2a4a;
+  }
+  .tab-table .note-tab.blow {
+    color: #4fc3f7;
+  }
+  .tab-table .note-tab.draw {
+    color: #fca311;
+  }
+  .tab-table .note-tab.rest {
+    color: #555;
+  }
+  .tab-table .note-tab.editing {
+    outline: 2px solid #fca311;
+    outline-offset: 2px;
+    background: #1a3a5a;
+  }
+
+  /* ===== Edit popup ===== */
+  .edit-popup {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+  }
+  .edit-popup.show { display: flex; }
+  .edit-popup-content {
+    background: #16213e;
+    border-radius: 16px;
+    padding: 28px;
+    width: 360px;
+    max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  .edit-popup-content h3 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: #fca311;
+  }
+  .edit-popup-content .info {
+    font-size: 14px;
+    color: #aaa;
+    margin-bottom: 12px;
+  }
+  .edit-popup-content label {
+    display: block;
+    font-size: 12px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    margin-top: 12px;
+  }
+  .edit-popup-content select {
+    width: 100%;
+    background: #0f3460;
+    border: 1px solid #1a4a7a;
+    color: #e0e0e0;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+  }
+  .edit-popup-content select:focus { border-color: #fca311; }
+  .edit-popup-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+  }
+  .edit-popup-actions .btn { padding: 8px 20px; font-size: 13px; }
+
+  /* ===== Saved Songs ===== */
+  .saved-card {
+    background: #16213e;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .saved-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #aaa;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .saved-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .saved-item {
+    background: #0f3460;
+    border: 1px solid #1a4a7a;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .saved-item:hover { border-color: #fca311; }
+  .saved-item .del {
+    color: #ff6b6b;
+    font-size: 16px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+  }
+  .saved-item .del:hover { opacity: 1; }
+  .saved-empty {
+    color: #555;
+    font-size: 14px;
+  }
+
+  /* ===== Keyboard hint ===== */
+  .keyboard-hint {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 12px;
+    color: #555;
+  }
+  .keyboard-hint kbd {
+    background: #2a2a4a;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: inherit;
+    color: #aaa;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 600px) {
+    body { padding: 12px; }
+    .song-info-grid { grid-template-columns: 1fr; }
+    .result-header { flex-direction: column; align-items: flex-start; }
+    .btn-row .btn { flex: 1; text-align: center; }
+  }
+
+  /* ===== Scrollbar ===== */
+  .tab-container::-webkit-scrollbar { height: 6px; }
+  .tab-container::-webkit-scrollbar-track { background: #2a2a4a; border-radius: 3px; }
+  .tab-container::-webkit-scrollbar-thumb { background: #4a4a6a; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🎵 简谱 → 口琴吹吸谱</h1>
+  <div class="subtitle">C调十孔布鲁斯口琴 · 第一把位</div>
+
+  <!-- Input -->
+  <div class="input-card">
+    <label>📝 输入简谱</label>
+    <textarea id="notationInput" placeholder="示例：3 2 1 2 | 3 3 3 - | 2 2 2 - | 3 5 5 - |"></textarea>
+    <div class="input-hint">
+      <code>1 2 3 4 5 6 7</code> = 音符 &nbsp;·&nbsp; <code>0</code> = 休止符 &nbsp;·&nbsp;
+      <code>-</code> = 延音 &nbsp;·&nbsp; <code>|</code> = 小节线 &nbsp;·&nbsp;
+      <code>1'</code> = 高八度 &nbsp;·&nbsp; <code>1,</code> = 低八度
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="convertBtn">🔄 转换为吹吸谱</button>
+      <button class="btn btn-success" id="saveBtn" disabled>💾 保存歌曲</button>
+    </div>
+  </div>
+
+  <!-- Song Info -->
+  <div class="song-info-card" id="songInfoCard">
+    <div class="song-info-grid">
+      <div>
+        <label>歌曲名称</label>
+        <input id="songName" placeholder="玛丽有只小羊羔" value="未命名曲目">
+      </div>
+      <div>
+        <label>调号</label>
+        <input id="songKey" placeholder="1=C" value="1=C">
+      </div>
+      <div>
+        <label>速度</label>
+        <input id="songTempo" placeholder="♩=120" value="♩=120">
+      </div>
+      <div>
+        <label>来源 / 备注</label>
+        <input id="songNote" placeholder="口琴自学谱">
+      </div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-card" id="resultCard">
+    <div class="result-header">
+      <div>
+        <div class="result-title" id="resultTitle">转换结果</div>
+        <div class="result-subtitle" id="resultSubtitle"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" id="exportBtn">📋 复制文本</button>
+        <button class="btn btn-secondary" id="refreshBtn">🔄 重新转换</button>
+      </div>
+    </div>
+    <div class="tab-container" id="tabContainer"></div>
+  </div>
+
+  <!-- Saved Songs -->
+  <div class="saved-card">
+    <h3>📂 已保存的曲谱</h3>
+    <div class="saved-list" id="savedList"></div>
+  </div>
+
+  <div class="keyboard-hint">
+    点击谱子上的 <kbd>1吹</kbd><kbd>①吸</kbd> 可手动修改 · 鼠标悬停查看孔位详情
+  </div>
+</div>
+
+<!-- Edit Popup -->
+<div class="edit-popup" id="editPopup">
+  <div class="edit-popup-content">
+    <h3>✏️ 修改吹吸方式</h3>
+    <div class="info" id="editInfo">音符 <strong>5</strong>（Sol）</div>
+    <label>孔号</label>
+    <select id="editHole"></select>
+    <label>吹/吸</label>
+    <select id="editBlowDraw">
+      <option value="blow">吹（Blow）</option>
+      <option value="draw">吸（Draw）</option>
+    </select>
+    <div class="edit-popup-actions">
+      <button class="btn btn-secondary" id="editCancel">取消</button>
+      <button class="btn btn-primary" id="editConfirm">确认修改</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================================================================
+//  C 调口琴 第一把位 音阶映射表
+// ===================================================================
+// 映射：noteName -> array of { hole, type: 'blow'|'draw' }
+const HARMONICA_MAP = {
+  '1':  [{ hole: 1, type: 'blow' }, { hole: 4, type: 'blow' }, { hole: 7, type: 'blow' }],
+  '2':  [{ hole: 1, type: 'draw' }, { hole: 4, type: 'draw' }, { hole: 8, type: 'draw' }],
+  '3':  [{ hole: 2, type: 'blow' }, { hole: 5, type: 'blow' }, { hole: 8, type: 'blow' }],
+  '4':  [{ hole: 5, type: 'draw' }, { hole: 9, type: 'draw' }],
+  '5':  [{ hole: 2, type: 'draw' }, { hole: 3, type: 'blow' }, { hole: 6, type: 'blow' }, { hole: 7, type: 'draw' }, { hole: 9, type: 'blow' }],
+  '6':  [{ hole: 6, type: 'draw' }, { hole: 10, type: 'draw' }],
+  '7':  [{ hole: 3, type: 'draw' }, { hole: 7, type: 'draw' }],
+};
+
+const REST_NOTE = { hole: '-', type: 'rest' };
+
+// ===================================================================
+//  Helpers
+// ===================================================================
+function formatTab(hole, type) {
+  if (type === 'rest') return '—';
+  const num = hole;
+  if (type === 'blow') return `${num}吹`;
+  // draw with circle
+  const circled = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
+  return circled[num - 1] + '吸';
+}
+
+function isDraw(type) { return type === 'draw'; }
+function isBlow(type) { return type === 'blow'; }
+
+// ===================================================================
+//  Parse Jianpu text
+// ===================================================================
+function parseJianpu(text) {
+  const tokens = [];
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i];
+    if (ch === ' ' || ch === '\n' || ch === '\t' || ch === '\r') {
+      i++;
+      continue;
+    }
+    if (ch === '|') {
+      tokens.push({ type: 'barline' });
+      i++;
+      continue;
+    }
+    if (ch === ':') {
+      // repeat
+      if (i + 1 < text.length && text[i+1] === '|') {
+        tokens.push({ type: 'repeat_start' });
+        i += 2;
+      } else if (i + 1 < text.length && text[i+1] === ':') {
+        tokens.push({ type: 'repeat_end' });
+        i += 2;
+      } else {
+        tokens.push({ type: 'char', value: ':' });
+        i++;
+      }
+      continue;
+    }
+    if (ch === '-') {
+      tokens.push({ type: 'tie' });
+      i++;
+      continue;
+    }
+    // Note: number with optional octave modifier
+    if (/[0-7]/.test(ch)) {
+      let note = ch;
+      i++;
+      let octave = ''; // '' = middle, "'" = high, "," = low
+      // Check for octave modifiers after the number
+      while (i < text.length && (text[i] === "'" || text[i] === ',')) {
+        octave += text[i];
+        i++;
+      }
+      tokens.push({ type: 'note', value: note, octave });
+      continue;
+    }
+    // any other char
+    tokens.push({ type: 'char', value: ch });
+    i++;
+  }
+  return tokens;
+}
+
+// ===================================================================
+//  Convert parsed tokens to harmonica tabs
+// ===================================================================
+function convertToTabs(tokens) {
+  const measures = [];
+  let currentMeasure = [];
+  let lastNoteValue = null;
+
+  for (const token of tokens) {
+    if (token.type === 'barline' || token.type === 'repeat_start' || token.type === 'repeat_end') {
+      if (currentMeasure.length > 0 || token.type === 'barline') {
+        measures.push({ notes: currentMeasure, barType: token.type });
+        currentMeasure = [];
+      }
+      continue;
+    }
+    if (token.type === 'tie') {
+      // Tie: extend previous note
+      if (lastNoteValue !== null) {
+        currentMeasure.push({ ...lastNoteValue, isTie: true });
+      } else {
+        currentMeasure.push(REST_NOTE);
+      }
+      continue;
+    }
+    if (token.type === 'note') {
+      const val = token.value;
+      const octave = token.octave || '';
+      if (val === '0') {
+        const rest = { ...REST_NOTE, jianpu: '0', octave: '' };
+        currentMeasure.push(rest);
+        lastNoteValue = rest;
+        continue;
+      }
+      // Determine the best note to use based on octave
+      const candidates = HARMONICA_MAP[val];
+      if (!candidates || candidates.length === 0) {
+        currentMeasure.push({ ...REST_NOTE, jianpu: val, octave });
+        lastNoteValue = { ...REST_NOTE, jianpu: val, octave };
+        continue;
+      }
+
+      // Select best candidate based on octave hint and breath pattern
+      let best = selectBestCandidate(candidates, val, octave, lastNoteValue);
+      best.jianpu = val;
+      best.octave = octave;
+      best.isTie = false;
+      currentMeasure.push(best);
+      lastNoteValue = best;
+      continue;
+    }
+  }
+  // Push last measure if not empty
+  if (currentMeasure.length > 0) {
+    measures.push({ notes: currentMeasure, barType: 'barline' });
+  }
+  return measures;
+}
+
+// ===================================================================
+//  Select best candidate for a note
+// ===================================================================
+function selectBestCandidate(candidates, noteVal, octave, prevNote) {
+  // Octave-based filtering
+  let filtered = candidates;
+  if (octave === "'") {
+    // High octave: prefer holes 4-10
+    filtered = candidates.filter(c => c.hole >= 4);
+    if (filtered.length === 0) filtered = candidates;
+  } else if (octave === ',' || octave === "''") {
+    // Low octave: prefer holes 1-3
+    filtered = candidates.filter(c => c.hole <= 3);
+    if (filtered.length === 0) filtered = candidates;
+  }
+
+  if (filtered.length === 1) return { ...filtered[0] };
+
+  // Try to maintain breath pattern (avoid switching blow/draw unnecessarily)
+  if (prevNote && prevNote.type !== 'rest' && prevNote.hole !== '-') {
+    const sameBreath = filtered.filter(c => c.type === prevNote.type);
+    if (sameBreath.length > 0) {
+      // Among same breath, prefer same hole or adjacent hole
+      const closest = sameBreath.reduce((best, c) => {
+        const diff = Math.abs(c.hole - prevNote.hole);
+        if (!best) return { ...c, diff };
+        return diff < best.diff ? { ...c, diff } : best;
+      }, null);
+      if (closest) {
+        delete closest.diff;
+        return closest;
+      }
+    }
+  }
+
+  // Default: return the first (lowest hole)
+  return { ...filtered[0] };
+}
+
+// ===================================================================
+//  Render tab table
+// ===================================================================
+function renderTabs(measures, container) {
+  if (!measures || measures.length === 0) {
+    container.innerHTML = '<div style="color:#888;text-align:center;padding:20px;">暂无转换结果，请先输入简谱</div>';
+    return;
+  }
+
+  let html = '<table class="tab-table">';
+
+  // Row 1: Measure numbers
+  html += '<tr>';
+  let measureIdx = 0;
+  for (const measure of measures) {
+    if (measure.barType === 'barline' && measure.notes.length > 0) {
+      html += `<td class="measure-num" colspan="${measure.notes.length + 1}">第 ${measureIdx + 1} 小节</td>`;
+      measureIdx++;
+    } else if (measure.notes.length > 0) {
+      html += `<td class="measure-num" colspan="${measure.notes.length + 1}">第 ${measureIdx + 1} 小节</td>`;
+      measureIdx++;
+    }
+  }
+  html += '</tr>';
+
+  // Row 2: Jianpu notes
+  html += '<tr>';
+  for (const measure of measures) {
+    if (measure.barType === 'barline') {
+      if (measure.notes.length === 0) {
+        html += '<td class="bar-line">|</td>';
+      } else {
+        for (const note of measure.notes) {
+          const isTie = note.isTie;
+          const noteChar = isTie ? '—' : (note.jianpu || '0');
+          const octaveSymbol = note.octave === "'" ? '′' : note.octave === ',' ? '̣' : '';
+          html += `<td class="note-num">${noteChar}${octaveSymbol}</td>`;
+        }
+        html += '<td class="bar-line">|</td>';
+      }
+    } else if (measure.barType === 'repeat_start') {
+      html += '<td class="bar-line">‖:</td>';
+      for (const note of measure.notes) {
+        const isTie = note.isTie;
+        const noteChar = isTie ? '—' : (note.jianpu || '0');
+        const octaveSymbol = note.octave === "'" ? '′' : note.octave === ',' ? '̣' : '';
+        html += `<td class="note-num">${noteChar}${octaveSymbol}</td>`;
+      }
+    } else if (measure.barType === 'repeat_end') {
+      for (const note of measure.notes) {
+        const isTie = note.isTie;
+        const noteChar = isTie ? '—' : (note.jianpu || '0');
+        const octaveSymbol = note.octave === "'" ? '′' : note.octave === ',' ? '̣' : '';
+        html += `<td class="note-num">${noteChar}${octaveSymbol}</td>`;
+      }
+      html += '<td class="bar-line">:‖</td>';
+    }
+  }
+  html += '</tr>';
+
+  // Row 3: Harmonica tabs
+  html += '<tr>';
+  let globalIdx = 0;
+  for (const measure of measures) {
+    if (measure.barType === 'barline') {
+      if (measure.notes.length === 0) {
+        html += '<td class="bar-line"> </td>';
+      } else {
+        for (const note of measure.notes) {
+          const tabText = formatTab(note.hole, note.type);
+          const cssClass = note.type === 'rest' ? 'rest' : note.type;
+          html += `<td class="note-tab ${cssClass}" data-index="${globalIdx}" data-hole="${note.hole}" data-type="${note.type}" data-jianpu="${note.jianpu || '0'}" data-octave="${note.octave || ''}">${tabText}</td>`;
+          globalIdx++;
+        }
+        html += '<td class="bar-line"> </td>';
+      }
+    } else if (measure.barType === 'repeat_start') {
+      html += '<td class="bar-line"> </td>';
+      for (const note of measure.notes) {
+        const tabText = formatTab(note.hole, note.type);
+        const cssClass = note.type === 'rest' ? 'rest' : note.type;
+        html += `<td class="note-tab ${cssClass}" data-index="${globalIdx}" data-hole="${note.hole}" data-type="${note.type}" data-jianpu="${note.jianpu || '0'}" data-octave="${note.octave || ''}">${tabText}</td>`;
+        globalIdx++;
+      }
+    } else if (measure.barType === 'repeat_end') {
+      for (const note of measure.notes) {
+        const tabText = formatTab(note.hole, note.type);
+        const cssClass = note.type === 'rest' ? 'rest' : note.type;
+        html += `<td class="note-tab ${cssClass}" data-index="${globalIdx}" data-hole="${note.hole}" data-type="${note.type}" data-jianpu="${note.jianpu || '0'}" data-octave="${note.octave || ''}">${tabText}</td>`;
+        globalIdx++;
+      }
+      html += '<td class="bar-line"> </td>';
+    }
+  }
+  html += '</tr>';
+
+  html += '</table>';
+  container.innerHTML = html;
+
+  // Attach click handlers to tabs
+  container.querySelectorAll('.note-tab').forEach(el => {
+    if (el.classList.contains('rest') || el.textContent === '—') return;
+    el.addEventListener('click', () => openEditPopup(parseInt(el.dataset.index), el));
+  });
+}
+
+// ===================================================================
+//  Edit Popup
+// ===================================================================
+let editingIndex = -1;
+let editingData = null;
+
+function openEditPopup(index, el) {
+  editingIndex = index;
+  const jianpu = el.dataset.jianpu;
+  const hole = parseInt(el.dataset.hole);
+  const type = el.dataset.type;
+  const octave = el.dataset.octave || '';
+
+  const candidates = HARMONICA_MAP[jianpu] || [];
+  if (candidates.length === 0) return;
+
+  document.getElementById('editInfo').innerHTML = `音符 <strong>${jianpu}</strong>（${octave === "'" ? '高音' : octave === ',' ? '低音' : '中音'}）`;
+
+  const holeSelect = document.getElementById('editHole');
+  holeSelect.innerHTML = '';
+  for (const c of candidates) {
+    const opt = document.createElement('option');
+    opt.value = `${c.hole}|${c.type}`;
+    opt.textContent = `第 ${c.hole} 孔 · ${c.type === 'blow' ? '吹' : '吸'}（${formatTab(c.hole, c.type)}）`;
+    if (c.hole === hole && c.type === type) opt.selected = true;
+    holeSelect.appendChild(opt);
+  }
+
+  document.getElementById('editBlowDraw').value = type;
+  document.getElementById('editPopup').classList.add('show');
+}
+
+document.getElementById('editConfirm').addEventListener('click', () => {
+  const val = document.getElementById('editHole').value;
+  const [hole, type] = val.split('|');
+  const cells = document.querySelectorAll('.note-tab');
+  const cell = cells[editingIndex];
+  if (cell) {
+    cell.dataset.hole = hole;
+    cell.dataset.type = type;
+    cell.className = `note-tab ${type}`;
+    cell.textContent = formatTab(parseInt(hole), type);
+  }
+  document.getElementById('editPopup').classList.remove('show');
+  editingIndex = -1;
+});
+
+document.getElementById('editCancel').addEventListener('click', () => {
+  document.getElementById('editPopup').classList.remove('show');
+  editingIndex = -1;
+});
+
+document.getElementById('editPopup').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) {
+    document.getElementById('editPopup').classList.remove('show');
+    editingIndex = -1;
+  }
+});
+
+// ===================================================================
+//  Convert Action
+// ===================================================================
+let currentMeasures = [];
+
+document.getElementById('convertBtn').addEventListener('click', () => {
+  const text = document.getElementById('notationInput').value.trim();
+  if (!text) {
+    alert('请先输入简谱内容！');
+    return;
+  }
+
+  const tokens = parseJianpu(text);
+  currentMeasures = convertToTabs(tokens);
+
+  if (currentMeasures.length === 0 || currentMeasures.every(m => m.notes.length === 0)) {
+    alert('未能解析出有效音符，请检查输入格式。');
+    return;
+  }
+
+  const container = document.getElementById('tabContainer');
+  renderTabs(currentMeasures, container);
+
+  // Build info text
+  const noteCount = currentMeasures.reduce((s, m) => s + m.notes.filter(n => n.type !== 'rest' && n.hole !== '-').length, 0);
+  const blowCount = currentMeasures.reduce((s, m) => s + m.notes.filter(n => n.type === 'blow').length, 0);
+  const drawCount = currentMeasures.reduce((s, m) => s + m.notes.filter(n => n.type === 'draw').length, 0);
+  document.getElementById('resultSubtitle').textContent =
+    `共 ${currentMeasures.length} 小节 · ${noteCount} 个音符 · ${blowCount} 吹 ${drawCount} 吸`;
+  document.getElementById('resultTitle').textContent = document.getElementById('songName').value || '转换结果';
+
+  document.getElementById('resultCard').classList.add('show');
+  document.getElementById('songInfoCard').classList.add('show');
+  document.getElementById('saveBtn').disabled = false;
+});
+
+// ===================================================================
+//  Export as text
+// ===================================================================
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const title = document.getElementById('resultTitle').textContent;
+  const key = document.getElementById('songKey').value;
+  const tempo = document.getElementById('songTempo').value;
+  const cells = document.querySelectorAll('.note-tab');
+  const rows = currentMeasures;
+
+  let text = `${title}\n`;
+  text += `${key}  ${tempo}\n`;
+  text += '─'.repeat(40) + '\n\n';
+
+  // Jianpu row
+  let line1 = '';
+  let line2 = '';
+  for (const measure of rows) {
+    for (const note of measure.notes) {
+      const isTie = note.isTie;
+      const noteChar = isTie ? '—' : (note.jianpu || '0');
+      const octaveSymbol = note.octave === "'" ? '′' : note.octave === ',' ? '̣' : '';
+      line1 += noteChar + octaveSymbol + ' ';
+      line2 += formatTab(note.hole, note.type) + ' ';
+    }
+    if (measure.barType === 'barline') {
+      line1 += '│ ';
+      line2 += '│ ';
+    } else if (measure.barType === 'repeat_start') {
+      line1 += '‖:';
+      line2 += ' ‖:';
+    } else if (measure.barType === 'repeat_end') {
+      line1 += ':‖';
+      line2 += ':‖ ';
+    }
+  }
+
+  text += '简谱：' + line1 + '\n';
+  text += '口琴：' + line2 + '\n\n';
+  text += `吹：${line1.split('').filter(c => /[1-7]/.test(c)).length} 个音符\n`;
+  text += `（①吹 ②吹 ... = 吹气 · ①吸 ②吸 ... = 吸气）\n`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    alert('已复制到剪贴板！');
+  }).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('已复制到剪贴板！');
+  });
+});
+
+// ===================================================================
+//  Refresh / Re-convert (preserve manual edits)
+// ===================================================================
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  document.getElementById('convertBtn').click();
+});
+
+// ===================================================================
+//  Save / Load (localStorage)
+// ===================================================================
+const STORAGE_KEY = 'harmonica_tab_songs';
+
+function loadSavedSongs() {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch { return []; }
+}
+
+function saveSongs(songs) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(songs));
+}
+
+function renderSavedSongs() {
+  const list = document.getElementById('savedList');
+  const songs = loadSavedSongs();
+  if (songs.length === 0) {
+    list.innerHTML = '<span class="saved-empty">暂无保存的曲谱，转换后点击「保存歌曲」</span>';
+    return;
+  }
+  list.innerHTML = '';
+  for (let i = 0; i < songs.length; i++) {
+    const s = songs[i];
+    const item = document.createElement('div');
+    item.className = 'saved-item';
+    item.innerHTML = `
+      <span>🎵 ${s.name}</span>
+      <span style="color:#666;font-size:12px;">${s.date}</span>
+      <span class="del" data-idx="${i}">✕</span>
+    `;
+    item.addEventListener('click', (e) => {
+      if (e.target.classList.contains('del')) return;
+      loadSong(i);
+    });
+    item.querySelector('.del').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteSong(i);
+    });
+    list.appendChild(item);
+  }
+}
+
+function getCurrentSongData() {
+  const cells = document.querySelectorAll('.note-tab');
+  const notes = [];
+  cells.forEach((el, idx) => {
+    notes.push({
+      jianpu: el.dataset.jianpu || '0',
+      hole: parseInt(el.dataset.hole) || '-',
+      type: el.dataset.type || 'rest',
+      octave: el.dataset.octave || '',
+    });
+  });
+  return {
+    name: document.getElementById('songName').value || '未命名曲目',
+    key: document.getElementById('songKey').value || '1=C',
+    tempo: document.getElementById('songTempo').value || '♩=120',
+    note: document.getElementById('songNote').value || '',
+    notation: document.getElementById('notationInput').value,
+    notes: notes,
+    measures: currentMeasures,
+    date: new Date().toLocaleDateString('zh-CN'),
+  };
+}
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const songs = loadSavedSongs();
+  const data = getCurrentSongData();
+
+  // Check if song with same name exists
+  const existing = songs.findIndex(s => s.name === data.name);
+  if (existing >= 0) {
+    if (!confirm(`「${data.name}」已存在，是否覆盖？`)) return;
+    songs[existing] = data;
+  } else {
+    songs.push(data);
+  }
+  saveSongs(songs);
+  renderSavedSongs();
+  alert(`✅ 「${data.name}」已保存！`);
+});
+
+function loadSong(index) {
+  const songs = loadSavedSongs();
+  if (index >= songs.length) return;
+  const s = songs[index];
+
+  document.getElementById('notationInput').value = s.notation || '';
+  document.getElementById('songName').value = s.name;
+  document.getElementById('songKey').value = s.key || '1=C';
+  document.getElementById('songTempo').value = s.tempo || '♩=120';
+  document.getElementById('songNote').value = s.note || '';
+
+  // Re-convert
+  document.getElementById('convertBtn').click();
+
+  // Apply manual edits if stored
+  if (s.notes && s.notes.length > 0) {
+    const cells = document.querySelectorAll('.note-tab');
+    if (cells.length === s.notes.length) {
+      s.notes.forEach((n, i) => {
+        if (cells[i] && n.type !== 'rest') {
+          cells[i].dataset.hole = n.hole;
+          cells[i].dataset.type = n.type;
+          cells[i].className = `note-tab ${n.type}`;
+          cells[i].textContent = formatTab(n.hole, n.type);
+        }
+      });
+    }
+  }
+
+  // Scroll to result
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function deleteSong(index) {
+  const songs = loadSavedSongs();
+  const name = songs[index].name;
+  if (!confirm(`确定删除「${name}」吗？`)) return;
+  songs.splice(index, 1);
+  saveSongs(songs);
+  renderSavedSongs();
+}
+
+// ===================================================================
+//  Init
+// ===================================================================
+renderSavedSongs();
+
+// Keyboard shortcut: Enter to convert
+document.getElementById('notationInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.ctrlKey) {
+    e.preventDefault();
+    document.getElementById('convertBtn').click();
+  }
+});
+
+// Example load
+window.addEventListener('load', () => {
+  // If there's a default example, pre-fill it
+  const example = '3 2 1 2 | 3 3 3 - | 2 2 2 - | 3 5 5 - |\n3 2 1 2 | 3 3 3 3 | 2 2 3 2 | 1 - - - |';
+  document.getElementById('notationInput').placeholder = '在此粘贴简谱...\n例如：' + example;
+});
+</script>
+</body>
+</html>
