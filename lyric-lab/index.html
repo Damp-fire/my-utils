@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1E1E22">
+<link rel="manifest" href="manifest.json">
+<title>Lyric Lab</title>
+
+<style>
+/* ============================================================
+   CSS Variables & Reset
+   ============================================================ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --ll-bg: #1E1E22;
+  --ll-text: #D4D4D4;
+  --ll-text-secondary: #9CA3AF;
+  --ll-accent: #6EB5FF;
+  --ll-accent-hover: #4A9EFF;
+  --ll-border: #3A3A40;
+  --ll-card-bg: #2A2A30;
+  --ll-surface: #25252B;
+  --ll-danger: #EF4444;
+  --ll-success: #34D399;
+  --ll-warning: #FBBF24;
+  --ll-tag-daily: #34D399;
+  --ll-tag-lyric: #F59E0B;
+  --ll-font-jp: "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
+  --ll-font-ui: system-ui, "Noto Sans SC", "PingFang SC", sans-serif;
+  --ll-font-mono: "JetBrains Mono", "Cascadia Code", monospace;
+  --ll-radius: 10px;
+  --ll-radius-sm: 6px;
+  --ll-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--ll-font-ui);
+  background: var(--ll-bg);
+  color: var(--ll-text);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================================================
+   Shared Components
+   ============================================================ */
+button {
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--ll-radius);
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+.btn-primary {
+  background: var(--ll-accent);
+  color: #1E1E22;
+}
+.btn-primary:hover { background: var(--ll-accent-hover); }
+.btn-primary:disabled { opacity: 0.5; }
+
+.btn-secondary {
+  background: var(--ll-card-bg);
+  color: var(--ll-text);
+  border: 1px solid var(--ll-border);
+}
+.btn-secondary:hover { background: var(--ll-surface); }
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: var(--ll-radius-sm);
+}
+
+.btn-icon {
+  width: 36px; height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 18px;
+}
+.btn-icon:hover { background: var(--ll-surface); }
+
+.btn-tts {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--ll-surface);
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.btn-tts:hover { background: var(--ll-accent); color: #1E1E22; }
+.btn-tts.playing { background: var(--ll-accent); color: #1E1E22; }
+
+input, textarea {
+  font-family: inherit;
+  font-size: 15px;
+  background: var(--ll-card-bg);
+  color: var(--ll-text);
+  border: 1px solid var(--ll-border);
+  border-radius: var(--ll-radius);
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+input:focus, textarea:focus { border-color: var(--ll-accent); }
+input::placeholder { color: var(--ll-text-secondary); }
+
+/* ============================================================
+   Top Bar
+   ============================================================ */
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ll-border);
+  flex-shrink: 0;
+}
+.top-bar h1 {
+  font-size: 17px;
+  font-weight: 600;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.top-bar .subtitle {
+  font-size: 13px;
+  color: var(--ll-text-secondary);
+}
+
+/* ============================================================
+   Main Content Area
+   ============================================================ */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(60px + var(--ll-safe-bottom));
+}
+.main-content.has-bottom-bar {
+  padding-bottom: calc(60px + var(--ll-safe-bottom));
+}
+
+/* ============================================================
+   Bottom Nav
+   ============================================================ */
+.bottom-nav {
+  display: flex;
+  border-top: 1px solid var(--ll-border);
+  background: var(--ll-bg);
+  flex-shrink: 0;
+  padding-bottom: var(--ll-safe-bottom);
+}
+.bottom-nav button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 4px;
+  font-size: 11px;
+  color: var(--ll-text-secondary);
+  transition: color 0.15s;
+}
+.bottom-nav button .nav-icon { font-size: 20px; }
+.bottom-nav button.active { color: var(--ll-accent); }
+
+/* ============================================================
+   Search View
+   ============================================================ */
+.search-container {
+  padding: 20px 16px;
+}
+.search-container h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.search-container .search-desc {
+  font-size: 14px;
+  color: var(--ll-text-secondary);
+  margin-bottom: 16px;
+}
+.search-box {
+  position: relative;
+  margin-bottom: 16px;
+}
+.search-box input {
+  padding-right: 44px;
+  font-size: 16px;
+  height: 48px;
+}
+.search-box .search-btn {
+  position: absolute;
+  right: 6px; top: 6px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ll-accent);
+  color: #1E1E22;
+  font-size: 18px;
+}
+.search-box .search-btn:disabled { opacity: 0.5; }
+
+.candidate-list { margin-bottom: 24px; }
+.candidate-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--ll-card-bg);
+  border: 1px solid var(--ll-border);
+  border-radius: var(--ll-radius);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.candidate-item:hover, .candidate-item:active { border-color: var(--ll-accent); }
+.candidate-item .candidate-info { flex: 1; min-width: 0; }
+.candidate-item .candidate-title {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.candidate-item .candidate-artist {
+  font-size: 13px;
+  color: var(--ll-text-secondary);
+  margin-top: 2px;
+}
+.candidate-item .candidate-arrow { color: var(--ll-text-secondary); font-size: 20px; }
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.section-header h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ll-text-secondary);
+}
+
+.song-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--ll-card-bg);
+  border: 1px solid var(--ll-border);
+  border-radius: var(--ll-radius);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.song-list-item:hover, .song-list-item:active { border-color: var(--ll-accent); }
+.song-list-item .song-info { flex: 1; min-width: 0; }
+.song-list-item .song-title {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.song-list-item .song-artist {
+  font-size: 12px;
+  color: var(--ll-text-secondary);
+  margin-top: 2px;
+}
+.song-list-item .song-delete {
+  color: var(--ll-text-secondary);
+  padding: 8px;
+  font-size: 16px;
+  border-radius: var(--ll-radius-sm);
+}
+.song-list-item .song-delete:hover { color: var(--ll-danger); background: rgba(239,68,68,0.1); }
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--ll-text-secondary);
+}
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+
+/* ============================================================
+   Lyrics View
+   ============================================================ */
+.lyrics-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ll-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lyrics-header .back-btn {
+  width: 36px; height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 20px;
+}
+.lyrics-header .back-btn:hover { background: var(--ll-surface); }
+.lyrics-header .song-meta { flex: 1; min-width: 0; }
+.lyrics-header .song-meta .meta-title {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lyrics-header .song-meta .meta-artist {
+  font-size: 12px;
+  color: var(--ll-text-secondary);
+}
+
+.lyrics-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--ll-border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.lyrics-toolbar button {
+  white-space: nowrap;
+  font-size: 12px;
+}
+.lyrics-toolbar .toggle-btn {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  background: var(--ll-surface);
+  border: 1px solid var(--ll-border);
+  color: var(--ll-text-secondary);
+}
+.lyrics-toolbar .toggle-btn.on {
+  background: var(--ll-accent);
+  color: #1E1E22;
+  border-color: var(--ll-accent);
+}
+
+.lyrics-list {
+  padding: 12px 16px;
+}
+.lyric-block {
+  padding: 14px 12px;
+  border-radius: var(--ll-radius);
+  margin-bottom: 6px;
+  transition: background 0.15s;
+  border: 1px solid transparent;
+}
+.lyric-block:active { background: var(--ll-surface); }
+.lyric-block .lyric-jp {
+  font-family: var(--ll-font-jp);
+  font-size: 1.15em;
+  font-weight: 600;
+  line-height: 1.6;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.lyric-block .lyric-jp .jp-text { flex: 1; }
+.lyric-block .lyric-romaji {
+  font-size: 0.85em;
+  color: var(--ll-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 2px;
+}
+.lyric-block .lyric-zh {
+  font-size: 0.82em;
+  color: var(--ll-text-secondary);
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+.word-clickable {
+  cursor: pointer;
+  border-bottom: 1px dashed var(--ll-text-secondary);
+  transition: all 0.15s;
+  padding: 0 1px;
+}
+.word-clickable:hover { color: var(--ll-accent); border-color: var(--ll-accent); }
+.word-clickable.daily-use { border-color: var(--ll-tag-daily); }
+.word-clickable.lyric-only { border-color: var(--ll-tag-lyric); }
+
+/* ============================================================
+   Bottom Sheet (Word Detail)
+   ============================================================ */
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+.sheet-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.word-sheet {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 101;
+  background: var(--ll-card-bg);
+  border-radius: 16px 16px 0 0;
+  padding: 20px 16px;
+  padding-bottom: calc(20px + var(--ll-safe-bottom));
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  max-width: 480px;
+  margin: 0 auto;
+}
+.word-sheet.open { transform: translateY(0); }
+
+.word-sheet .sheet-handle {
+  width: 36px; height: 4px;
+  background: var(--ll-border);
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+.word-sheet .sheet-word {
+  font-family: var(--ll-font-jp);
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.word-sheet .sheet-reading {
+  font-size: 16px;
+  color: var(--ll-text-secondary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.word-sheet .sheet-meaning {
+  font-size: 18px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.word-sheet .sheet-tags {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.tag-daily {
+  background: rgba(52,211,153,0.15);
+  color: var(--ll-tag-daily);
+}
+.tag-lyric {
+  background: rgba(245,158,11,0.15);
+  color: var(--ll-tag-lyric);
+}
+.word-sheet .sheet-actions {
+  display: flex;
+  gap: 10px;
+}
+.word-sheet .sheet-actions button { flex: 1; }
+
+/* ============================================================
+   Vocab View
+   ============================================================ */
+.vocab-container { padding: 16px; }
+.vocab-group { margin-bottom: 24px; }
+.vocab-group-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ll-text-secondary);
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+.vocab-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--ll-card-bg);
+  border: 1px solid var(--ll-border);
+  border-radius: var(--ll-radius);
+  margin-bottom: 6px;
+}
+.vocab-item .vocab-word {
+  font-family: var(--ll-font-jp);
+  font-size: 16px;
+  font-weight: 600;
+  flex: 1;
+}
+.vocab-item .vocab-meaning {
+  font-size: 13px;
+  color: var(--ll-text-secondary);
+  max-width: 120px;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vocab-item .vocab-delete {
+  color: var(--ll-text-secondary);
+  padding: 6px;
+  font-size: 14px;
+  border-radius: var(--ll-radius-sm);
+  flex-shrink: 0;
+}
+.vocab-item .vocab-delete:hover { color: var(--ll-danger); }
+
+/* ============================================================
+   Settings View
+   ============================================================ */
+.settings-container { padding: 20px 16px; }
+.settings-container h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ll-text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.form-hint {
+  font-size: 12px;
+  color: var(--ll-text-secondary);
+  margin-top: 4px;
+}
+
+/* ============================================================
+   Toast
+   ============================================================ */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--ll-card-bg);
+  color: var(--ll-text);
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s;
+  border: 1px solid var(--ll-border);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  white-space: nowrap;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.toast.error { border-color: var(--ll-danger); color: var(--ll-danger); }
+
+/* ============================================================
+   Loading
+   ============================================================ */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 12px;
+}
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid var(--ll-border);
+  border-top-color: var(--ll-accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text {
+  font-size: 14px;
+  color: var(--ll-text-secondary);
+}
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+.hidden { display: none !important; }
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.text-center { text-align: center; }
+.mt-12 { margin-top: 12px; }
+.mb-12 { margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Top Bar -->
+  <header class="top-bar" id="topBar">
+    <h1 id="topBarTitle">Lyric Lab</h1>
+    <button class="btn-icon" id="btnSettings" title="设置" aria-label="设置">⚙</button>
+  </header>
+
+  <!-- Main Content -->
+  <div class="main-content" id="mainContent"></div>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav hidden" id="bottomNav">
+    <button data-view="search" class="active">
+      <span class="nav-icon">🔍</span> 搜索
+    </button>
+    <button data-view="lyrics">
+      <span class="nav-icon">🎵</span> 歌词
+    </button>
+    <button data-view="vocab">
+      <span class="nav-icon">📖</span> 生词本
+    </button>
+  </nav>
+
+  <!-- Word Detail Bottom Sheet -->
+  <div class="sheet-overlay" id="sheetOverlay"></div>
+  <div class="word-sheet" id="wordSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-word" id="sheetWord"></div>
+    <div class="sheet-reading" id="sheetReading"></div>
+    <div class="sheet-meaning" id="sheetMeaning"></div>
+    <div class="sheet-tags" id="sheetTags"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-sm btn-secondary" id="sheetTtsBtn">🔊 听发音</button>
+      <button class="btn btn-sm btn-primary" id="sheetVocabBtn">+ 加入生词本</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ===================================================================
+// Constants
+// ===================================================================
+const DB_NAME = 'lyric-lab-db';
+const DB_VERSION = 1;
+const LS_API_KEY = 'll-api-key';
+const LS_API_ENDPOINT = 'll-api-endpoint';
+const LS_API_MODEL = 'll-api-model';
+const LS_SHOW_ROMAJI = 'll-show-romaji';
+const LS_SHOW_TRANSLATION = 'll-show-translation';
+
+// ===================================================================
+// IndexedDB Layer
+// ===================================================================
+const LLStorage = (() => {
+  let db = null;
+
+  function open() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = (e) => {
+        const d = e.target.result;
+        if (!d.objectStoreNames.contains('songs')) {
+          d.createObjectStore('songs', { keyPath: 'id' });
+        }
+        if (!d.objectStoreNames.contains('lyrics')) {
+          d.createObjectStore('lyrics', { keyPath: 'id' });
+        }
+        if (!d.objectStoreNames.contains('vocab')) {
+          const vs = d.createObjectStore('vocab', { keyPath: 'id' });
+          vs.createIndex('sourceSongId', 'sourceSongId', { unique: false });
+        }
+      };
+      req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  function getDB() { return db ? Promise.resolve(db) : open(); }
+
+  function put(storeName, item) {
+    return getDB().then((d) => new Promise((resolve, reject) => {
+      const tx = d.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      const r = store.put(item);
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    }));
+  }
+
+  function get(storeName, id) {
+    return getDB().then((d) => new Promise((resolve, reject) => {
+      const tx = d.transaction(storeName, 'readonly');
+      const r = tx.objectStore(storeName).get(id);
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    }));
+  }
+
+  function getAll(storeName) {
+    return getDB().then((d) => new Promise((resolve, reject) => {
+      const tx = d.transaction(storeName, 'readonly');
+      const r = tx.objectStore(storeName).getAll();
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    }));
+  }
+
+  function getAllByIndex(storeName, indexName, value) {
+    return getDB().then((d) => new Promise((resolve, reject) => {
+      const tx = d.transaction(storeName, 'readonly');
+      const store = tx.objectStore(storeName);
+      const idx = store.index(indexName);
+      const r = idx.getAll(value);
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    }));
+  }
+
+  function delete_(storeName, id) {
+    return getDB().then((d) => new Promise((resolve, reject) => {
+      const tx = d.transaction(storeName, 'readwrite');
+      const r = tx.objectStore(storeName).delete(id);
+      r.onsuccess = () => resolve();
+      r.onerror = () => reject(r.error);
+    }));
+  }
+
+  return { open, put, get, getAll, getAllByIndex, delete: delete_ };
+})();
+
+// ===================================================================
+// Helpers
+// ===================================================================
+function $(sel) { return document.querySelector(sel); }
+function $$(sel) { return document.querySelectorAll(sel); }
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// ===================================================================
+// API Layer
+// ===================================================================
+const LLAPI = (() => {
+  function getConfig() {
+    const key = atob(localStorage.getItem(LS_API_KEY) || '');
+    const endpoint = localStorage.getItem(LS_API_ENDPOINT) || 'https://api.deepseek.com';
+    const model = localStorage.getItem(LS_API_MODEL) || 'deepseek-chat';
+    return { key, endpoint, model };
+  }
+
+  function isConfigured() {
+    const { key } = getConfig();
+    return key.length > 0;
+  }
+
+  async function callLLM(systemPrompt, userPrompt) {
+    const { key, endpoint, model } = getConfig();
+    if (!key) throw new Error('API Key 未配置');
+
+    const url = endpoint.replace(/\/$/, '') + '/v1/chat/completions';
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.3,
+          response_format: { type: 'json_object' },
+          max_tokens: 8000
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        if (res.status === 401) throw new Error('API Key 无效，请检查设置');
+        if (res.status === 429) throw new Error('请求过于频繁，请稍后再试');
+        throw new Error(`API 错误 (${res.status}): ${errBody.slice(0, 200)}`);
+      }
+
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) throw new Error('API 返回为空');
+
+      // Parse JSON — LLMs can return various formats
+      let jsonStr = content.trim();
+
+      // Strip markdown code blocks
+      jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
+      // If still not pure JSON, try to extract {...} or [...]
+      if (!jsonStr.startsWith('{') && !jsonStr.startsWith('[')) {
+        const match = jsonStr.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+        if (match) jsonStr = match[0];
+      }
+
+      try {
+        return JSON.parse(jsonStr);
+      } catch (e) {
+        console.error('JSON parse failed, raw content:', content.slice(0, 500));
+        throw new Error('API 返回格式异常，请重试');
+      }
+    } catch (err) {
+      clearTimeout(timeout);
+      if (err.name === 'AbortError') throw new Error('请求超时，请检查网络或 API 端点');
+      if (err.message === 'Failed to fetch') throw new Error('无法连接 API，请检查端点地址和网络');
+      throw err;
+    }
+  }
+
+  async function searchSongs(query) {
+    return callLLM(
+      '你是一个日语歌曲搜索引擎。用户输入搜索词后，返回匹配的日语歌曲列表。只返回真实存在的日语歌曲。JSON格式：{"songs":[{"title":"歌名","artist":"艺人","confidence":0.95}]}。最多5首，按匹配度降序。无结果返回{"songs":[]}。只输出JSON。',
+      query
+    );
+  }
+
+  async function parseLyrics(title, artist) {
+    return callLLM(
+      `你是一位日语歌词专家。请提供歌曲《${title}》的完整歌词，包含罗马音转写、中文翻译和逐词拆解。
+
+返回严格JSON格式：
+{
+  "title": "原版日文歌名",
+  "artist": "艺人名",
+  "lines": [
+    {
+      "jp": "残酷な天使のように",
+      "romaji": "zankoku na tenshi no you ni",
+      "zh": "像残酷的天使一样",
+      "words": [
+        {"surface":"残酷","reading":"ざんこく","meaning":"残酷","wordType":"daily-use"},
+        {"surface":"な","reading":"な","meaning":"（形容动词连体形）","wordType":"daily-use"},
+        {"surface":"天使","reading":"てんし","meaning":"天使","wordType":"daily-use"},
+        {"surface":"のように","reading":"のように","meaning":"像……一样","wordType":"daily-use"}
+      ]
+    }
+  ]
+}
+
+规则：
+1. 完整歌词，无省略
+2. romaji使用小写字母，长音用aa/ii/uu/ee/ou表示，促音双写辅音
+3. zh翻译自然通顺
+4. words逐词拆解：surface=词形, reading=平假名读音, meaning=中文释义, wordType="daily-use"(日常高频词)或"lyric-only"(歌词/诗歌专用表达)
+5. 日语助词如 は/が/を/に/で/と/も/から/まで/へ/の/な 等都要单独拆出，wordType="daily-use"`,
+      `歌曲：${title}${artist ? ' — ' + artist : ''}`
+    );
+  }
+
+  return { getConfig, isConfigured, searchSongs, parseLyrics };
+})();
+
+// ===================================================================
+// TTS (SpeechSynthesis)
+// ===================================================================
+const LLTTS = (() => {
+  let currentUtterance = null;
+
+  function getJapaneseVoice() {
+    const voices = speechSynthesis.getVoices();
+    // Prefer ja-JP, fallback to any Japanese
+    return voices.find(v => v.lang === 'ja-JP')
+      || voices.find(v => v.lang.startsWith('ja'))
+      || null;
+  }
+
+  function speak(text, options = {}) {
+    stop();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ja-JP';
+    utterance.rate = options.rate || 0.9;
+    utterance.pitch = options.pitch || 1;
+    const voice = getJapaneseVoice();
+    if (voice) utterance.voice = voice;
+
+    if (options.onStart) utterance.onstart = options.onStart;
+    if (options.onEnd) utterance.onend = options.onEnd;
+    if (options.onError) utterance.onerror = options.onError;
+
+    currentUtterance = utterance;
+    speechSynthesis.speak(utterance);
+    return utterance;
+  }
+
+  function stop() {
+    speechSynthesis.cancel();
+    currentUtterance = null;
+  }
+
+  function isAvailable() {
+    return 'speechSynthesis' in window;
+  }
+
+  return { speak, stop, isAvailable };
+})();
+
+// ===================================================================
+// Toast
+// ===================================================================
+const toast = (() => {
+  let timer = null;
+  const el = $('#toast');
+
+  function show(msg, type = '') {
+    clearTimeout(timer);
+    el.textContent = msg;
+    el.className = 'toast ' + type + ' show';
+    timer = setTimeout(() => { el.classList.remove('show'); }, 2500);
+  }
+  return { show };
+})();
+
+// ===================================================================
+// App State & Navigation
+// ===================================================================
+const state = {
+  currentView: 'search',
+  currentSongId: null,
+  currentLyrics: null
+};
+
+const $mainContent = $('#mainContent');
+const $bottomNav = $('#bottomNav');
+const $topBarTitle = $('#topBarTitle');
+
+function navigate(view) {
+  state.currentView = view;
+  renderView(view);
+  // Update bottom nav
+  $$('#bottomNav button').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === view);
+  });
+}
+
+function renderView(view) {
+  switch (view) {
+    case 'search': renderSearchView(); break;
+    case 'lyrics': renderLyricsView(); break;
+    case 'vocab': renderVocabView(); break;
+    case 'settings': renderSettingsView(); break;
+  }
+}
+
+// ===================================================================
+// Search View
+// ===================================================================
+async function renderSearchView() {
+  $topBarTitle.textContent = 'Lyric Lab';
+  $bottomNav.classList.remove('hidden');
+  $$('#bottomNav button').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === 'search');
+  });
+
+  const songs = await LLStorage.getAll('songs');
+
+  $mainContent.innerHTML = `
+    <div class="search-container">
+      <h2>学唱日语歌 🎤</h2>
+      <p class="search-desc">搜歌名，看歌词，学发音，记单词</p>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="输入歌名，支持模糊搜索…" autocomplete="off">
+        <button class="search-btn" id="searchBtn" title="搜索">🔍</button>
+      </div>
+      <div id="candidatesArea"></div>
+      <div id="mySongsArea">
+        <div class="section-header">
+          <h3>我的歌曲 (${songs.length})</h3>
+        </div>
+        <div id="mySongsList">${renderSongList(songs)}</div>
+      </div>
+    </div>
+  `;
+
+  // Bind events
+  const searchInput = $('#searchInput');
+  const searchBtn = $('#searchBtn');
+
+  async function doSearch() {
+    const query = searchInput.value.trim();
+    if (!query) return;
+
+    if (!LLAPI.isConfigured()) {
+      toast.show('请先设置 API Key', 'error');
+      navigate('settings');
+      return;
+    }
+
+    searchBtn.disabled = true;
+    const candidatesArea = $('#candidatesArea');
+    candidatesArea.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">搜索中…</span></div>';
+
+    try {
+      const result = await LLAPI.searchSongs(query);
+      const songList = result.songs || [];
+      if (songList.length === 0) {
+        candidatesArea.innerHTML = '<div class="empty-state"><p>😕 未找到匹配的歌曲<br>试试更完整的关键词</p></div>';
+      } else {
+        candidatesArea.innerHTML = `
+          <div class="candidate-list">
+            ${songList.map((s, i) => `
+              <div class="candidate-item" data-index="${i}">
+                <div class="candidate-info">
+                  <div class="candidate-title">${escapeHTML(s.title)}</div>
+                  <div class="candidate-artist">${escapeHTML(s.artist || '未知艺人')}</div>
+                </div>
+                <span class="candidate-arrow">→</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        // Bind candidate clicks
+        candidatesArea.querySelectorAll('.candidate-item').forEach(el => {
+          el.addEventListener('click', () => {
+            const idx = parseInt(el.dataset.index);
+            const song = songList[idx];
+            selectAndParseSong(song.title, song.artist);
+          });
+        });
+      }
+    } catch (err) {
+      candidatesArea.innerHTML = `<div class="empty-state"><p>❌ ${escapeHTML(err.message)}</p></div>`;
+    } finally {
+      searchBtn.disabled = false;
+    }
+  }
+
+  searchBtn.addEventListener('click', doSearch);
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doSearch();
+  });
+
+  // My songs click/delete
+  $('#mySongsList').addEventListener('click', (e) => {
+    const item = e.target.closest('.song-list-item');
+    if (!item) return;
+    if (e.target.closest('.song-delete')) {
+      const id = item.dataset.id;
+      deleteSong(id);
+      return;
+    }
+    const id = item.dataset.id;
+    openLyrics(id);
+  });
+}
+
+function renderSongList(songs) {
+  if (songs.length === 0) {
+    return '<div class="empty-state"><p>📭 还没有歌曲<br>搜索一首歌开始吧</p></div>';
+  }
+  return songs.map(s => `
+    <div class="song-list-item" data-id="${s.id}">
+      <div class="song-info">
+        <div class="song-title">${escapeHTML(s.title)}</div>
+        <div class="song-artist">${escapeHTML(s.artist || '')}</div>
+      </div>
+      <button class="song-delete" title="删除">✕</button>
+    </div>
+  `).join('');
+}
+
+async function selectAndParseSong(title, artist) {
+  // Check if already cached
+  const songs = await LLStorage.getAll('songs');
+  const existing = songs.find(s => s.title === title && s.artist === artist);
+  if (existing) {
+    // Check lyrics exist
+    const lyrics = await LLStorage.get('lyrics', existing.id);
+    if (lyrics) {
+      openLyrics(existing.id);
+      return;
+    }
+  }
+
+  // Parse new song
+  showMainLoading('正在解析歌词…');
+  try {
+    const data = await LLAPI.parseLyrics(title, artist);
+    const songId = generateId();
+    const song = {
+      id: songId,
+      title: data.title || title,
+      artist: data.artist || artist,
+      createdAt: Date.now()
+    };
+    await LLStorage.put('songs', song);
+
+    const lyrics = {
+      id: songId,
+      songId,
+      lines: data.lines || [],
+      createdAt: Date.now()
+    };
+    await LLStorage.put('lyrics', lyrics);
+
+    toast.show('解析完成！');
+    openLyrics(songId);
+  } catch (err) {
+    toast.show(err.message, 'error');
+    renderSearchView();
+  }
+}
+
+async function deleteSong(id) {
+  if (!confirm('确定删除这首歌？歌词和单词收藏也会被删除。')) return;
+  await LLStorage.delete('songs', id);
+  await LLStorage.delete('lyrics', id);
+  // Also delete associated vocab
+  const vocabItems = await LLStorage.getAllByIndex('vocab', 'sourceSongId', id);
+  for (const v of vocabItems) {
+    await LLStorage.delete('vocab', v.id);
+  }
+  toast.show('已删除');
+  renderSearchView();
+}
+
+function openLyrics(songId) {
+  state.currentSongId = songId;
+  navigate('lyrics');
+}
+
+function showMainLoading(text) {
+  $mainContent.innerHTML = `<div class="loading"><div class="spinner"></div><span class="loading-text">${text}</span></div>`;
+}
+
+// ===================================================================
+// Lyrics View
+// ===================================================================
+async function renderLyricsView() {
+  const songId = state.currentSongId;
+  if (!songId) { navigate('search'); return; }
+
+  const song = await LLStorage.get('songs', songId);
+  const lyrics = await LLStorage.get('lyrics', songId);
+
+  if (!song || !lyrics) {
+    toast.show('歌词数据不存在', 'error');
+    navigate('search');
+    return;
+  }
+
+  state.currentLyrics = lyrics;
+  $topBarTitle.textContent = '歌词';
+  $bottomNav.classList.remove('hidden');
+  $$('#bottomNav button').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === 'lyrics');
+  });
+
+  const showRomaji = localStorage.getItem(LS_SHOW_ROMAJI) !== 'false';
+  const showTranslation = localStorage.getItem(LS_SHOW_TRANSLATION) !== 'true'; // default hidden
+
+  $mainContent.innerHTML = `
+    <div class="lyrics-header">
+      <button class="back-btn" id="lyricsBackBtn">←</button>
+      <div class="song-meta">
+        <div class="meta-title">${escapeHTML(song.title)}</div>
+        <div class="meta-artist">${escapeHTML(song.artist || '')}</div>
+      </div>
+    </div>
+    <div class="lyrics-toolbar">
+      <button class="toggle-btn ${showRomaji ? 'on' : ''}" id="toggleRomaji">🔤 罗马音</button>
+      <button class="toggle-btn ${showTranslation ? 'on' : ''}" id="toggleTranslation">🌐 翻译</button>
+    </div>
+    <div class="lyrics-list" id="lyricsList">
+      ${renderLyricLines(lyrics.lines, showRomaji, showTranslation)}
+    </div>
+  `;
+
+  // Bind back
+  $('#lyricsBackBtn').addEventListener('click', () => navigate('search'));
+
+  // Bind toggles
+  $('#toggleRomaji').addEventListener('click', () => {
+    const on = $('#toggleRomaji').classList.toggle('on');
+    localStorage.setItem(LS_SHOW_ROMAJI, on);
+    $$('.lyric-romaji').forEach(el => el.classList.toggle('hidden', !on));
+  });
+
+  $('#toggleTranslation').addEventListener('click', () => {
+    const on = $('#toggleTranslation').classList.toggle('on');
+    localStorage.setItem(LS_SHOW_TRANSLATION, on);
+    $$('.lyric-zh').forEach(el => el.classList.toggle('hidden', !on));
+  });
+
+  // Bind word clicks & TTS buttons
+  bindLyricsEvents(lyrics);
+}
+
+function renderLyricLines(lines, showRomaji, showTranslation) {
+  return lines.map((line, lineIdx) => `
+    <div class="lyric-block" data-line="${lineIdx}">
+      <div class="lyric-jp">
+        <span class="jp-text">${renderJapaneseWords(line, lineIdx)}</span>
+        <button class="btn-tts" data-tts-line="${lineIdx}" title="朗读">▶</button>
+      </div>
+      <div class="lyric-romaji ${showRomaji ? '' : 'hidden'}">${escapeHTML(line.romaji || '')}</div>
+      <div class="lyric-zh ${showTranslation ? '' : 'hidden'}">${escapeHTML(line.zh || '')}</div>
+    </div>
+  `).join('');
+}
+
+function renderJapaneseWords(line, lineIdx) {
+  if (!line.words || line.words.length === 0) {
+    return escapeHTML(line.jp || '');
+  }
+  return line.words.map((w, wi) => {
+    const cls = w.wordType === 'daily-use' ? 'daily-use' : 'lyric-only';
+    return `<span class="word-clickable ${cls}" data-line="${lineIdx}" data-word="${wi}">${escapeHTML(w.surface)}</span>`;
+  }).join('');
+}
+
+function bindLyricsEvents(lyrics) {
+  const list = $('#lyricsList');
+
+  // TTS per line
+  list.addEventListener('click', (e) => {
+    const ttsBtn = e.target.closest('[data-tts-line]');
+    if (ttsBtn) {
+      const idx = parseInt(ttsBtn.dataset.ttsLine);
+      const line = lyrics.lines[idx];
+      if (line && line.jp) {
+        // Visual feedback
+        ttsBtn.classList.add('playing');
+        LLTTS.speak(line.jp, {
+          onEnd: () => ttsBtn.classList.remove('playing'),
+          onError: () => ttsBtn.classList.remove('playing')
+        });
+      }
+      return;
+    }
+
+    // Word click
+    const wordEl = e.target.closest('.word-clickable');
+    if (wordEl) {
+      const lineIdx = parseInt(wordEl.dataset.line);
+      const wordIdx = parseInt(wordEl.dataset.word);
+      const line = lyrics.lines[lineIdx];
+      if (line && line.words && line.words[wordIdx]) {
+        openWordSheet(line.words[wordIdx], lyrics.id);
+      }
+    }
+  });
+}
+
+// ===================================================================
+// Bottom Sheet — Word Detail
+// ===================================================================
+let currentSheetWord = null;
+let currentSheetSongId = null;
+
+function openWordSheet(word, songId) {
+  currentSheetWord = word;
+  currentSheetSongId = songId;
+  $('#sheetWord').textContent = word.surface;
+  $('#sheetReading').innerHTML = `${escapeHTML(word.reading)} <button class="btn-tts" id="sheetWordTts" title="听发音" style="width:28px;height:28px;font-size:12px;">🔊</button>`;
+  $('#sheetMeaning').textContent = word.meaning;
+  $('#sheetTags').innerHTML = word.wordType === 'daily-use'
+    ? '<span class="tag tag-daily">📅 日常高频词</span>'
+    : '<span class="tag tag-lyric">🎵 歌词专用表达</span>';
+
+  $('#sheetOverlay').classList.add('open');
+  $('#wordSheet').classList.add('open');
+
+  // Bind TTS
+  $('#sheetWordTts').onclick = () => {
+    LLTTS.speak(word.surface, { rate: 0.75 });
+  };
+}
+
+function closeWordSheet() {
+  $('#sheetOverlay').classList.remove('open');
+  $('#wordSheet').classList.remove('open');
+  currentSheetWord = null;
+  currentSheetSongId = null;
+}
+
+$('#sheetOverlay').addEventListener('click', closeWordSheet);
+
+$('#sheetVocabBtn').addEventListener('click', async () => {
+  if (!currentSheetWord) return;
+  const word = currentSheetWord;
+  const songId = currentSheetSongId;
+
+  // Dedup check
+  const existing = await LLStorage.getAllByIndex('vocab', 'sourceSongId', songId);
+  const dup = existing.find(v => v.word === word.surface);
+  if (dup) {
+    toast.show('该单词已在生词本中');
+    closeWordSheet();
+    return;
+  }
+
+  const song = await LLStorage.get('songs', songId);
+  const vocabItem = {
+    id: generateId(),
+    word: word.surface,
+    reading: word.reading,
+    meaning: word.meaning,
+    wordType: word.wordType,
+    sourceSongId: songId,
+    sourceSongTitle: song ? song.title : '',
+    addedAt: Date.now()
+  };
+  await LLStorage.put('vocab', vocabItem);
+  toast.show('已加入生词本 📖');
+  closeWordSheet();
+});
+
+$('#sheetTtsBtn').addEventListener('click', () => {
+  if (currentSheetWord) {
+    LLTTS.speak(currentSheetWord.surface, { rate: 0.75 });
+  }
+});
+
+// ===================================================================
+// Vocab View
+// ===================================================================
+async function renderVocabView() {
+  $topBarTitle.textContent = '生词本';
+  $bottomNav.classList.remove('hidden');
+  $$('#bottomNav button').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === 'vocab');
+  });
+
+  const vocabItems = await LLStorage.getAll('vocab');
+  // Sort by addedAt desc
+  vocabItems.sort((a, b) => b.addedAt - a.addedAt);
+
+  // Group by song
+  const groups = {};
+  for (const v of vocabItems) {
+    const key = v.sourceSongTitle || '未分类';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(v);
+  }
+
+  if (vocabItems.length === 0) {
+    $mainContent.innerHTML = `
+      <div class="vocab-container">
+        <h2>📖 生词本</h2>
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p>还没有收藏单词</p>
+          <p style="margin-top:4px;">在歌词中点击单词 → 加入生词本</p>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  $mainContent.innerHTML = `
+    <div class="vocab-container">
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:16px;">📖 生词本 (${vocabItems.length})</h2>
+      ${Object.entries(groups).map(([title, words]) => `
+        <div class="vocab-group">
+          <div class="vocab-group-title">🎵 ${escapeHTML(title)} (${words.length})</div>
+          ${words.map(w => `
+            <div class="vocab-item" data-id="${w.id}">
+              <div class="vocab-word">${escapeHTML(w.word)}</div>
+              <span class="tag ${w.wordType === 'daily-use' ? 'tag-daily' : 'tag-lyric'}" style="font-size:10px;padding:2px 8px;flex-shrink:0;">
+                ${w.wordType === 'daily-use' ? '日常' : '歌词'}
+              </span>
+              <div class="vocab-meaning">${escapeHTML(w.meaning)}</div>
+              <div class="vocab-reading" style="font-size:11px;color:var(--ll-text-secondary);">${escapeHTML(w.reading)}</div>
+              <button class="vocab-delete" title="删除">✕</button>
+            </div>
+          `).join('')}
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  // Bind click - TTS on word
+  $mainContent.addEventListener('click', (e) => {
+    const deleteBtn = e.target.closest('.vocab-delete');
+    if (deleteBtn) {
+      const item = deleteBtn.closest('.vocab-item');
+      if (item) {
+        const id = item.dataset.id;
+        LLStorage.delete('vocab', id).then(() => {
+          toast.show('已删除');
+          renderVocabView();
+        });
+      }
+      return;
+    }
+    const vocabItem = e.target.closest('.vocab-item');
+    if (vocabItem) {
+      const id = vocabItem.dataset.id;
+      const v = vocabItems.find(vi => vi.id === id);
+      if (v && v.word) {
+        LLTTS.speak(v.word, { rate: 0.75 });
+      }
+    }
+  });
+}
+
+// ===================================================================
+// Settings View
+// ===================================================================
+function renderSettingsView() {
+  $topBarTitle.textContent = '设置';
+  $bottomNav.classList.add('hidden');
+
+  const cfg = LLAPI.getConfig();
+
+  $mainContent.innerHTML = `
+    <div class="settings-container">
+      <h2>⚙ 设置</h2>
+      <div class="form-group">
+        <label>API 端点</label>
+        <input type="text" id="settingsEndpoint" value="${escapeHTML(cfg.endpoint)}" placeholder="https://api.deepseek.com">
+        <div class="form-hint">DeepSeek 或其他 OpenAI 兼容端点</div>
+      </div>
+      <div class="form-group">
+        <label>API Key</label>
+        <input type="password" id="settingsKey" value="${escapeHTML(cfg.key)}" placeholder="sk-…">
+      </div>
+      <div class="form-group">
+        <label>模型</label>
+        <input type="text" id="settingsModel" value="${escapeHTML(cfg.model)}" placeholder="deepseek-chat">
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        <button class="btn btn-primary" id="settingsSave" style="flex:1;">保存</button>
+        <button class="btn btn-secondary" id="settingsBack" style="flex:1;">返回</button>
+      </div>
+      <div class="form-hint mt-12 text-center">
+        数据 &歌词仅在导入时调用 API，已缓存内容离线可用
+      </div>
+      <div class="form-hint text-center" style="margin-top:4px;">
+        发音使用浏览器内置日语 TTS，免费且离线可用
+      </div>
+    </div>
+  `;
+
+  $('#settingsSave').addEventListener('click', () => {
+    const endpoint = $('#settingsEndpoint').value.trim();
+    const key = $('#settingsKey').value.trim();
+    const model = $('#settingsModel').value.trim();
+
+    if (!key) { toast.show('请输入 API Key', 'error'); return; }
+
+    localStorage.setItem(LS_API_KEY, btoa(key));
+    localStorage.setItem(LS_API_ENDPOINT, endpoint);
+    localStorage.setItem(LS_API_MODEL, model);
+
+    toast.show('设置已保存 ✅');
+    navigate('search');
+  });
+
+  $('#settingsBack').addEventListener('click', () => navigate('search'));
+}
+
+// ===================================================================
+// Bottom Nav
+// ===================================================================
+$('#bottomNav').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const view = btn.dataset.view;
+  if (view) {
+    if (view === 'lyrics' && !state.currentSongId) {
+      toast.show('请先选择一首歌曲');
+      return;
+    }
+    navigate(view);
+  }
+});
+
+// Settings button in top bar
+$('#btnSettings').addEventListener('click', () => navigate('settings'));
+
+// ===================================================================
+// Load voices early
+// ===================================================================
+if ('speechSynthesis' in window) {
+  speechSynthesis.getVoices();
+  speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+}
+
+// ===================================================================
+// PWA SW Registration
+// ===================================================================
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ===================================================================
+// Init
+// ===================================================================
+LLStorage.open().then(() => {
+  navigate('search');
+}).catch((err) => {
+  $mainContent.innerHTML = `<div class="empty-state"><p>❌ 存储初始化失败: ${escapeHTML(err.message)}</p></div>`;
+});
+</script>
+
+</body>
+</html>

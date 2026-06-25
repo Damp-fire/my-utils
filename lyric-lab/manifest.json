@@ -1,0 +1,13 @@
+{
+  "name": "Lyric Lab",
+  "short_name": "LyricLab",
+  "description": "日语歌词学习助手 - 搜歌、看歌词、学单词、练发音",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#1E1E22",
+  "theme_color": "#1E1E22",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
